@@ -70,26 +70,19 @@ library(ggplot2)
 #########################################################################################################
 # The below I am not done yet but I am adding in the income by census family households merged to census tract
 
-#income<- read.csv("Vancouver-Household_data_stats.csv", TRUE)
+#income<- read.csv("Income_2001.csv", TRUE)
 #m1_count_pop<- read.csv("m1_count_pop.csv", TRUE)
 #colnames(income)
 #
-#income_house<-income %>% filter(a == 2)
-#m1_income_house<-merge(m1_count_pop, income_house, by.x="CTname", by.y="GEO_CODE..POR.")
-#
+#income_house<-income %>% select("CTname","Median.family.income..")
+#head(income_house)
+#m1_income_house<-merge(m1_count_pop, income_house, by.x="CTname", by.y="CTname")
+##
 #write.csv(m1_income_house, "m1_income_house.csv", row.names = TRUE)
 
 #########################################################################################################
 
 
- #The below is changing the CT_Population_2001.CSV file to have the CTname convention used in other census files
-pop<- read.csv("Income_2001.CSV", TRUE)
-pop <- pop %>% mutate (CTname = as.character(CTname))
-pop$CTname<-substring(pop$CTname, 1, 7)
-pop$CTname <- paste0("933", pop$CTname)
-pop <- pop %>% mutate (CTname = as.numeric(CTname))
-head(pop)
-#write.csv(pop, "CT_Population_2001_CTnameFixed.CSV", row.names = TRUE)
 
 
 
