@@ -7,6 +7,7 @@ options(digits = 9) #This is becasue census tract ID only shows first 6 digits i
 library(tidyverse) #Just a library to let me do more
 library(ggplot2)
 
+
 ## Problems: So for the PCCF there are some codes that do not match to active postal codes, how do we know which one to pick if there are multiple postal code entries?
 
 
@@ -30,6 +31,23 @@ library(ggplot2)
 #m1<- merge(m1, HRName, by.x="DAuid", by.y="DAuid")
 #write.csv(m1, "merge_HRName_simple.csv", row.names = TRUE)
 
+
+#########################################################################################################
+# Create a new HRNAME.CSV with only FRASER SOUTH and CTNames attached
+#pccf<- read.csv("pccf_with_labels_unique_Postals.csv", TRUE)
+#pccf <- pccf[c("DAuid", "CTname")]
+#HRname<- read.csv("HRNAME.csv", TRUE)
+#HRname<- filter(HRname, HRNAME == "Fraser South                                                ")
+#
+#HRname<- merge(HRname, pccf, by.x="DAuid", by.y="DAuid")
+#HRname <- HRname %>% mutate (CTname = as.character(CTname))
+#HRname$CTname<-substring(HRname$CTname, 1, 7)
+#HRname$CTname <- paste0("9330", HRname$CTname)
+#HRname <- HRname %>% mutate (CTname = as.numeric(CTname))
+#write.csv(HRname, "HRNAME_FRASERSOUTH.CSV", row.names = TRUE)
+
+
+
 #########################################################################################################
 
 # The below is changing the CT_Population_2001.CSV file to have the CTname convention used in other census files
@@ -45,25 +63,29 @@ library(ggplot2)
 
 #########################################################################################################
 # The below counts number of cases per Census Tract and adds "9330" as the CMA to the census tract ID
+# Also adds entries from HRName that have 0 incidence
 
 #m1<-read.csv("merge_HRName_simple.csv", TRUE)
 #pop<- read.csv("CT_Population_2001_CTnameFixed.CSV", TRUE)
 #pop<- pop[c("CTname", "Population..2001..100..data.")]
-##
+#HRname<- read.csv("HRNAME_FRASERSOUTH.CSV", TRUE)
+#
 #m1_count<- as.data.frame(table (m1$CTname))
 #names(m1_count)[names(m1_count) == "Var1"] <- "CTname"
-#m1<-m1[c("CTname", "HRNAME")]
-#m1<-m1 %>% distinct(CTname, .keep_all = TRUE)
-#m1_count<- merge(m1_count, m1, by.x="CTname", by.y="CTname")
-#
 #
 #m1_count <- m1_count %>% mutate (CTname = as.character(CTname))
 #m1_count$CTname <- paste0("9330", m1_count$CTname)
 #m1_count <- m1_count %>% mutate (CTname = as.numeric(CTname))
 #
+#HRname<-HRname %>% distinct(CTname, .keep_all = TRUE)
+#m1_count<- merge(m1_count, HRname, by.x="CTname", by.y="CTname", all.x = TRUE, all.y = TRUE)
+#m1_count[is.na(m1_count)]<-0
+#
 #m1_count_pop<- merge(m1_count, pop, by.x="CTname", by.y="CTname")
 #m1_count_pop$incidence=m1_count_pop$Freq/m1_count_pop$Population..2001..100..data.
-#head(m1_count_pop)
+#m1_count_pop<-m1_count_pop[c("CTname", "Freq", "HRNAME", "Population..2001..100..data.","incidence")]
+#
+#
 #write.csv(m1_count_pop, "m1_count_pop.csv", row.names = TRUE)
 
 
@@ -81,12 +103,23 @@ library(ggplot2)
 #write.csv(m1_income_house, "m1_income_house.csv", row.names = TRUE)
 
 #########################################################################################################
+#The Following Bins the income
+m1_income_house<- read.csv("m1_income_house.csv", TRUE)
+m1_income_house <- mutate(m1_income_house, IncomeBracket = ifelse(Median.family.income..<50000, "Low", ifelse(Median.family.income..>80000, "High","Middle")))
+
+ByBracket<-m1_income_house %>%  group_by(IncomeBracket) %>%  summarise_at(vars(Population..2001..100..data., Freq), funs(sum))
+names(ByBracket)[names(ByBracket) == "Freq"] <- "Patient Cases"
+head(ByBracket)
+ByBracket$Incidence<- ByBracket$`Patient Cases`/ByBracket$Population..2001..100..data.
+ByBracket
 
 
 
 
 
 
+#########################################################################################################
+# Just extra reference code
 
 #graphics.off()
 #m1_income_house<- read.csv("m1_income_house.csv", TRUE)
