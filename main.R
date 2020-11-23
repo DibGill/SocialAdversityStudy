@@ -104,14 +104,68 @@ library(ggplot2)
 
 #########################################################################################################
 #The Following Bins the income
-m1_income_house<- read.csv("m1_income_house.csv", TRUE)
-m1_income_house <- mutate(m1_income_house, IncomeBracket = ifelse(Median.family.income..<50000, "Low", ifelse(Median.family.income..>80000, "High","Middle")))
 
-ByBracket<-m1_income_house %>%  group_by(IncomeBracket) %>%  summarise_at(vars(Population..2001..100..data., Freq), funs(sum))
-names(ByBracket)[names(ByBracket) == "Freq"] <- "Patient Cases"
-head(ByBracket)
-ByBracket$Incidence<- ByBracket$`Patient Cases`/ByBracket$Population..2001..100..data.
-ByBracket
+#m1_income_house<- read.csv("m1_income_house.csv", TRUE)
+#m1_income_house <- mutate(m1_income_house, IncomeBracket = ifelse(Median.family.income..<60000, "Low", ifelse(Median.family.income..>80000, "High","Middle")))
+#m1_income_house<- m1_income_house[-c(100,34),]
+#
+##ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+##head(ToothGrowth)
+#
+#graphics.off()
+##png(file="Plot incidence and income.png",width=1920, height=1080)
+#p <- ggplot(m1_income_house, aes(x = Median.family.income.., y = incidence, ylab = "Incidence Per Capita", xlab="Total Household Income ($)"))+ geom_point(shape=0, size=1, aes(color = IncomeBracket))
+#p
+
+#ByBracket<-m1_income_house %>%  group_by(IncomeBracket) %>%  summarise_at(vars(Population..2001..100..data., Freq), funs(sum))
+#names(ByBracket)[names(ByBracket) == "Freq"] <- "Patient Cases"
+#head(ByBracket)
+#ByBracket$Incidence<- ByBracket$`Patient Cases`/ByBracket$Population..2001..100..data.
+#ByBracket
+#
+
+#########################################################################################################
+#Calculating VANDIX Scores and Writing to VANDIX.CSV file
+NoCert <- read.csv("./Raw CSV/NoCert.csv", TRUE)
+EduPop <- read.csv("./Raw CSV/EduPop.csv", TRUE)
+UniCert <- read.csv("./Raw CSV/UniCert.csv", TRUE)
+Unemployed <- read.csv("./Raw CSV/Unemployed.csv", TRUE)
+LonePar <- read.csv("./Raw CSV/LonePar.csv", TRUE)
+AveInc <- read.csv("./Raw CSV/AveInc.csv", TRUE)
+HomeOwn <- read.csv("./Raw CSV/HomeOwn.csv", TRUE)
+TotDwell <- read.csv("./Raw CSV/TotDwell.csv", TRUE)
+ParticipationRate <- read.csv("./Raw CSV/ParticipationRate.csv", TRUE)
+TotFam<- read.csv("./Raw CSV/TotFam.csv", TRUE)
+a<- merge(NoCert, EduPop)
+a<- merge(a, UniCert)
+a<- merge(a, Unemployed)
+a<- merge(a, LonePar)
+a<- merge(a, AveInc)
+a<- merge(a, HomeOwn)
+a<- merge(a, TotDwell)
+a<- merge(a, ParticipationRate)
+a<- merge(a, TotFam)
+
+a <- a %>% mutate (CTname = as.character(CTname))
+a$CTname<-substring(a$CTname, 1, 7)
+a$CTname <- paste0("933", a$CTname)
+a <- a %>% mutate (CTname = as.numeric(CTname))
+
+a$No.High.school.completion<-a$NoCert/a$EduPop
+a$University.completion<- a$UniCert/a$EduPop
+a$Proportion.of.lone.parent.families<-a$LonePar/a$TotFam
+a$Home.ownership<-a$HomeOwn/a$TotDwell
+
+a<- a %>%  mutate(Z.No.High.school.completion = (No.High.school.completion - mean(No.High.school.completion))/sd(No.High.school.completion))
+a<- a %>%  mutate(Z.University.completion = (University.completion - mean(University.completion))/sd(University.completion))
+a<- a %>%  mutate(Z.Unemployed = (Unemployed - mean(Unemployed))/sd(Unemployed))
+a<- a %>%  mutate(Z.Proportion.of.lone.parent.families = (Proportion.of.lone.parent.families - mean(Proportion.of.lone.parent.families))/sd(Proportion.of.lone.parent.families))
+a<- a %>%  mutate(Z.AveInc = (AveInc - mean(AveInc))/sd(AveInc))
+a<- a %>%  mutate(Z.Home.ownership = (Home.ownership - mean(Home.ownership))/sd(Home.ownership))
+a<- a %>%  mutate(Z.ParticipationRate = (ParticipationRate - mean(ParticipationRate))/sd(ParticipationRate))
+
+write.csv(a, "VANDIX.csv", row.names = TRUE)
+
 
 
 
@@ -122,6 +176,7 @@ ByBracket
 # Just extra reference code
 
 #graphics.off()
+
 #m1_income_house<- read.csv("m1_income_house.csv", TRUE)
 ##lm.imp.1<-lm(earnings ~male+over65+white+immig+educ_r+workmos+workhrs.top+any.ssi+anywelfare+any.charity, data=sis, subset=earnings>0)
 #names(m1_income_house)[names(m1_income_house) == "Dim..Household.income.statistics..3...Member.ID...2...Median.total.income.of.households...."] <- "income"
@@ -130,7 +185,7 @@ ByBracket
 ##png(file="Plot incidence and income.png",width=1920, height=1080)
 #p <- ggplot(m1_income_house, aes(x = income, y = incidence, ylab = "Incidence Per Capita", xlab="Total Household Income ($)")) + geom_point()
 #p + annotate("text", x = 4, y = 0.0015, label = summary(pred)) +ylim(0, 0.0018)
-#
+
 ##abline(pred)
 ##dev.off()
 #text
