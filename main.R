@@ -90,7 +90,7 @@ library(ggplot2)
 
 
 #########################################################################################################
-# The below I am not done yet but I am adding in the income by census family households merged to census tract
+# Adding income by census family households merged to census tract
 
 #income<- read.csv("Income_2001.csv", TRUE)
 #m1_count_pop<- read.csv("m1_count_pop.csv", TRUE)
@@ -102,8 +102,113 @@ library(ggplot2)
 ##
 #write.csv(m1_income_house, "m1_income_house.csv", row.names = TRUE)
 
+
+
 #########################################################################################################
-#The Following Bins the income
+##Calculating VANDIX Scores and Writing to VANDIX.CSV file
+
+## Read all of the raw files that I made using data extracted from census
+#NoCert <- read.csv("./Raw CSV/NoCert.csv", TRUE)
+#EduPop <- read.csv("./Raw CSV/EduPop.csv", TRUE)
+#UniCert <- read.csv("./Raw CSV/UniCert.csv", TRUE)
+#Unemployed <- read.csv("./Raw CSV/Unemployed.csv", TRUE)
+#LonePar <- read.csv("./Raw CSV/LonePar.csv", TRUE)
+#AveInc <- read.csv("./Raw CSV/AveInc.csv", TRUE)
+#HomeOwn <- read.csv("./Raw CSV/HomeOwn.csv", TRUE)
+#TotDwell <- read.csv("./Raw CSV/TotDwell.csv", TRUE)
+#ParticipationRate <- read.csv("./Raw CSV/ParticipationRate.csv", TRUE)
+#TotFam<- read.csv("./Raw CSV/TotFam.csv", TRUE)
+
+## Merge all of the above files into a single data frame
+#VANDIX<- merge(NoCert, EduPop)
+#VANDIX<- merge(VANDIX, UniCert)
+#VANDIX<- merge(VANDIX, Unemployed)
+#VANDIX<- merge(VANDIX, LonePar)
+#VANDIX<- merge(VANDIX, AveInc)
+#VANDIX<- merge(VANDIX, HomeOwn)
+#VANDIX<- merge(VANDIX, TotDwell)
+#VANDIX<- merge(VANDIX, ParticipationRate)
+#VANDIX<- merge(VANDIX, TotFam)
+
+## Correct the CTname to follow the same format as the other CSV files
+#VANDIX <- VANDIX %>% mutate (CTname = as.character(CTname))
+#VANDIX$CTname<-substring(VANDIX$CTname, 1, 7)
+#VANDIX$CTname <- paste0("933", VANDIX$CTname)
+#VANDIX <- VANDIX %>% mutate (CTname = as.numeric(CTname))
+
+## Calculate the components of the VANDIX score as required by the VANDIX algorithm
+#VANDIX$No.High.school.completion<-VANDIX$NoCert/VANDIX$EduPop
+#VANDIX$University.completion<- VANDIX$UniCert/VANDIX$EduPop
+#VANDIX$Proportion.of.lone.parent.families<-VANDIX$LonePar/VANDIX$TotFam
+#VANDIX$Home.ownership<-VANDIX$HomeOwn/VANDIX$TotDwell
+
+## Calculate the Z score for each of the VANDIX components
+#VANDIX<- VANDIX %>%  mutate(Z.No.High.school.completion = (No.High.school.completion - mean(No.High.school.completion))/sd(No.High.school.completion))
+#VANDIX<- VANDIX %>%  mutate(Z.University.completion = (University.completion - mean(University.completion))/sd(University.completion))
+#VANDIX<- VANDIX %>%  mutate(Z.Unemployed = (Unemployed - mean(Unemployed))/sd(Unemployed))
+#VANDIX<- VANDIX %>%  mutate(Z.Proportion.of.lone.parent.families = (Proportion.of.lone.parent.families - mean(Proportion.of.lone.parent.families))/sd(Proportion.of.lone.parent.families))
+#VANDIX<- VANDIX %>%  mutate(Z.AveInc = (AveInc - mean(AveInc))/sd(AveInc))
+#VANDIX<- VANDIX %>%  mutate(Z.Home.ownership = (Home.ownership - mean(Home.ownership))/sd(Home.ownership))
+#VANDIX<- VANDIX %>%  mutate(Z.ParticipationRate = (ParticipationRate - mean(ParticipationRate))/sd(ParticipationRate))
+
+## Calculate the total VANDIX score multiplying each component by its required weight
+#VANDIX<- VANDIX%>% mutate(VANDIX.Score=(Z.No.High.school.completion*0.25+Z.University.completion*-0.179+Z.Unemployed*0.214+Z.ParticipationRate*-0.036
+#  +Z.Proportion.of.lone.parent.families*0.143+Z.Home.ownership*-0.089+Z.AveInc*-0.089))
+
+## Write the file to the computer
+#write.csv(VANDIX, "VANDIX.csv", row.names = TRUE)
+
+
+########################################################################################################################
+
+## Read the necessary files
+VANDIX<-read.csv("VANDIX.csv", TRUE)
+m1_count_pop<- read.csv("m1_count_pop.csv", TRUE)
+
+## Merge the above two so I have the VANDIX score and incidence together
+VANDIX<- merge(VANDIX, m1_count_pop, by.x="CTname", by.y="CTname")
+VANDIX<- VANDIX[-c(34),]  # Remove entry #34 which has a very abnormal finding (easily over 6SD)
+
+## Do the linear regression and print out the summary
+pred<- lm(VANDIX.Score~incidence, data=VANDIX)
+summary(pred)
+
+## Graph the VANDIX with the incidence
+p <- ggplot(VANDIX, aes(x = VANDIX.Score, y = incidence, ylab = "Incidence Per Capita", xlab="TVANDIX"))+ geom_point(shape=0, size=1)
+p
+
+
+
+
+
+
+
+
+
+
+#########################################################################################################
+## Just extra reference code below this point
+
+#graphics.off()
+
+#m1_income_house<- read.csv("m1_income_house.csv", TRUE)
+##lm.imp.1<-lm(earnings ~male+over65+white+immig+educ_r+workmos+workhrs.top+any.ssi+anywelfare+any.charity, data=sis, subset=earnings>0)
+#names(m1_income_house)[names(m1_income_house) == "Dim..Household.income.statistics..3...Member.ID...2...Median.total.income.of.households...."] <- "income"
+#
+#pred <- lm(incidence~income, data=m1_income_house)
+##png(file="Plot incidence and income.png",width=1920, height=1080)
+#p <- ggplot(m1_income_house, aes(x = income, y = incidence, ylab = "Incidence Per Capita", xlab="Total Household Income ($)")) + geom_point()
+#p + annotate("text", x = 4, y = 0.0015, label = summary(pred)) +ylim(0, 0.0018)
+
+##abline(pred)
+##dev.off()
+#text
+#summary(pred)
+
+
+
+#########################################################################################################
+#The Following Bins the income. Not necessary going forward.
 
 #m1_income_house<- read.csv("m1_income_house.csv", TRUE)
 #m1_income_house <- mutate(m1_income_house, IncomeBracket = ifelse(Median.family.income..<60000, "Low", ifelse(Median.family.income..>80000, "High","Middle")))
@@ -123,71 +228,4 @@ library(ggplot2)
 #ByBracket$Incidence<- ByBracket$`Patient Cases`/ByBracket$Population..2001..100..data.
 #ByBracket
 #
-
-#########################################################################################################
-#Calculating VANDIX Scores and Writing to VANDIX.CSV file
-NoCert <- read.csv("./Raw CSV/NoCert.csv", TRUE)
-EduPop <- read.csv("./Raw CSV/EduPop.csv", TRUE)
-UniCert <- read.csv("./Raw CSV/UniCert.csv", TRUE)
-Unemployed <- read.csv("./Raw CSV/Unemployed.csv", TRUE)
-LonePar <- read.csv("./Raw CSV/LonePar.csv", TRUE)
-AveInc <- read.csv("./Raw CSV/AveInc.csv", TRUE)
-HomeOwn <- read.csv("./Raw CSV/HomeOwn.csv", TRUE)
-TotDwell <- read.csv("./Raw CSV/TotDwell.csv", TRUE)
-ParticipationRate <- read.csv("./Raw CSV/ParticipationRate.csv", TRUE)
-TotFam<- read.csv("./Raw CSV/TotFam.csv", TRUE)
-a<- merge(NoCert, EduPop)
-a<- merge(a, UniCert)
-a<- merge(a, Unemployed)
-a<- merge(a, LonePar)
-a<- merge(a, AveInc)
-a<- merge(a, HomeOwn)
-a<- merge(a, TotDwell)
-a<- merge(a, ParticipationRate)
-a<- merge(a, TotFam)
-
-a <- a %>% mutate (CTname = as.character(CTname))
-a$CTname<-substring(a$CTname, 1, 7)
-a$CTname <- paste0("933", a$CTname)
-a <- a %>% mutate (CTname = as.numeric(CTname))
-
-a$No.High.school.completion<-a$NoCert/a$EduPop
-a$University.completion<- a$UniCert/a$EduPop
-a$Proportion.of.lone.parent.families<-a$LonePar/a$TotFam
-a$Home.ownership<-a$HomeOwn/a$TotDwell
-
-a<- a %>%  mutate(Z.No.High.school.completion = (No.High.school.completion - mean(No.High.school.completion))/sd(No.High.school.completion))
-a<- a %>%  mutate(Z.University.completion = (University.completion - mean(University.completion))/sd(University.completion))
-a<- a %>%  mutate(Z.Unemployed = (Unemployed - mean(Unemployed))/sd(Unemployed))
-a<- a %>%  mutate(Z.Proportion.of.lone.parent.families = (Proportion.of.lone.parent.families - mean(Proportion.of.lone.parent.families))/sd(Proportion.of.lone.parent.families))
-a<- a %>%  mutate(Z.AveInc = (AveInc - mean(AveInc))/sd(AveInc))
-a<- a %>%  mutate(Z.Home.ownership = (Home.ownership - mean(Home.ownership))/sd(Home.ownership))
-a<- a %>%  mutate(Z.ParticipationRate = (ParticipationRate - mean(ParticipationRate))/sd(ParticipationRate))
-
-write.csv(a, "VANDIX.csv", row.names = TRUE)
-
-
-
-
-
-
-
-#########################################################################################################
-# Just extra reference code
-
-#graphics.off()
-
-#m1_income_house<- read.csv("m1_income_house.csv", TRUE)
-##lm.imp.1<-lm(earnings ~male+over65+white+immig+educ_r+workmos+workhrs.top+any.ssi+anywelfare+any.charity, data=sis, subset=earnings>0)
-#names(m1_income_house)[names(m1_income_house) == "Dim..Household.income.statistics..3...Member.ID...2...Median.total.income.of.households...."] <- "income"
-#
-#pred <- lm(incidence~income, data=m1_income_house)
-##png(file="Plot incidence and income.png",width=1920, height=1080)
-#p <- ggplot(m1_income_house, aes(x = income, y = incidence, ylab = "Incidence Per Capita", xlab="Total Household Income ($)")) + geom_point()
-#p + annotate("text", x = 4, y = 0.0015, label = summary(pred)) +ylim(0, 0.0018)
-
-##abline(pred)
-##dev.off()
-#text
-#summary(pred)
 
